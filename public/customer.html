@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Hotel Print Service</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="/assets/customer.js" defer></script>
+  </head>
+  <body class="customer-page">
+    <main class="customer-shell">
+      <header class="brand-header">
+        <div class="brand-mark" aria-hidden="true">P</div>
+        <div>
+          <p class="eyebrow">Guest service</p>
+          <h1 id="hotel-name">Hotel Print Service</h1>
+        </div>
+      </header>
+
+      <section class="hero-copy" aria-labelledby="page-title">
+        <p class="step-label">Secure document drop-off</p>
+        <h2 id="page-title">Send a document to the front desk</h2>
+        <p>
+          Upload one PDF from your phone. We will check it, count the pages, and show any
+          printing charge before it is submitted.
+        </p>
+      </section>
+
+      <section class="card upload-card">
+        <form id="upload-form" novalidate>
+          <div class="field-grid">
+            <label class="field">
+              <span>Room number</span>
+              <input
+                id="room-number"
+                name="roomNumber"
+                autocomplete="off"
+                maxlength="20"
+                required
+                placeholder="Example: 412"
+              />
+            </label>
+            <label class="field">
+              <span>Last name</span>
+              <input
+                id="last-name"
+                name="lastName"
+                autocomplete="family-name"
+                maxlength="80"
+                required
+                placeholder="Name on the reservation"
+              />
+            </label>
+          </div>
+
+          <label class="file-drop" id="file-drop">
+            <input id="document" name="document" type="file" accept="application/pdf,.pdf" required />
+            <span class="file-icon" aria-hidden="true">PDF</span>
+            <strong id="file-title">Choose a PDF document</strong>
+            <span id="file-help">Tap to browse · Maximum <span id="max-size">10 MB</span></span>
+          </label>
+
+          <div id="form-error" class="alert error hidden" role="alert"></div>
+
+          <button class="button primary wide" id="upload-button" type="submit">
+            Check document
+          </button>
+        </form>
+      </section>
+
+      <section id="progress-card" class="card hidden" aria-live="polite">
+        <div class="progress-heading">
+          <div class="spinner" aria-hidden="true"></div>
+          <div>
+            <p class="eyebrow">Please keep this page open</p>
+            <h2 id="progress-title">Uploading document…</h2>
+          </div>
+        </div>
+        <div class="progress-track"><span id="progress-bar"></span></div>
+        <p id="progress-detail" class="muted">Preparing your document.</p>
+      </section>
+
+      <section id="confirmation-card" class="card hidden" aria-live="polite">
+        <div class="success-icon" aria-hidden="true">✓</div>
+        <p class="eyebrow">Document checked</p>
+        <h2 id="confirmation-title">Review your printing details</h2>
+        <dl class="price-breakdown">
+          <div><dt>Total pages</dt><dd id="total-pages">—</dd></div>
+          <div><dt>Free pages</dt><dd id="free-pages">—</dd></div>
+          <div><dt>Chargeable pages</dt><dd id="chargeable-pages">—</dd></div>
+          <div><dt>Price per extra page</dt><dd id="price-per-page">—</dd></div>
+          <div class="total-row"><dt>Total payment</dt><dd id="total-price">—</dd></div>
+        </dl>
+        <p id="payment-notice" class="notice"></p>
+        <div id="confirmation-error" class="alert error hidden" role="alert"></div>
+        <div class="button-row">
+          <button id="cancel-button" class="button secondary" type="button">Cancel</button>
+          <button id="confirm-button" class="button primary" type="button">Accept &amp; Submit</button>
+        </div>
+      </section>
+
+      <section id="success-card" class="card success-card hidden" aria-live="polite">
+        <div class="success-icon" aria-hidden="true">✓</div>
+        <p class="eyebrow">Sent successfully</p>
+        <h2>Your document is with the front desk</h2>
+        <p>Keep this reference if you need help:</p>
+        <p id="job-reference" class="reference-code"></p>
+        <p class="notice">Please visit the front desk to print and collect your document.</p>
+        <button id="new-upload-button" class="button secondary wide" type="button">
+          Send another document
+        </button>
+      </section>
+
+      <footer class="customer-footer">
+        <span>PDF only</span><span>Checked before submission</span><span>Printed by front desk</span>
+      </footer>
+    </main>
+  </body>
+</html>

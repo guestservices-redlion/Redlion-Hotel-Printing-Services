@@ -1,0 +1,39 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+coverage/
+.nyc_output/
+.tools/
+
+# Runtime data: never publish guest documents or hotel data
+data/**
+!data/**/
+!data/**/.keep
+*.sqlite
+*.sqlite-*
+*.db
+*.log
+*.pdf
+
+# Supabase local development
+.supabase/
+supabase/.branches/
+supabase/.temp/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local archives and credentials
+*.zip
+*.pem
+*.key
+*.pfx
+*.p12

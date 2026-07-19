@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hotel Print Front Desk</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="/assets/admin.js" defer></script>
+  </head>
+  <body class="admin-page">
+    <div class="admin-layout">
+      <aside class="sidebar">
+        <a href="/admin/queue" class="sidebar-brand">
+          <span class="brand-mark" aria-hidden="true">P</span>
+          <span><strong>Hotel Print</strong><small>Front desk</small></span>
+        </a>
+        <nav aria-label="Front desk">
+          <a href="/admin/queue" data-nav="queue"><span aria-hidden="true">▦</span>Print queue</a>
+          <a href="/admin/settings" data-nav="settings"><span aria-hidden="true">⚙</span>Settings</a>
+          <a href="/admin/qr-code" data-nav="qr-code"><span aria-hidden="true">▣</span>Guest QR code</a>
+        </nav>
+        <div class="sidebar-footer">
+          <p id="signed-in-user"></p>
+          <button id="logout-button" class="text-button" type="button">Sign out</button>
+        </div>
+      </aside>
+      <main class="admin-main">
+        <header class="mobile-admin-header">
+          <a href="/admin/queue" class="sidebar-brand">
+            <span class="brand-mark" aria-hidden="true">P</span><strong>Hotel Print</strong>
+          </a>
+          <button id="menu-button" class="icon-button" type="button" aria-label="Open menu">☰</button>
+        </header>
+        <div id="admin-content" class="admin-content" aria-live="polite">
+          <div class="page-loading"><div class="spinner"></div><p>Loading front desk…</p></div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

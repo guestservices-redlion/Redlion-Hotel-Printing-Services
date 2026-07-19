@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Front Desk Sign In</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="/assets/admin-login.js" defer></script>
+  </head>
+  <body class="auth-page">
+    <main class="auth-shell">
+      <section class="auth-brand">
+        <div class="brand-mark large" aria-hidden="true">P</div>
+        <p class="eyebrow">Hotel Print</p>
+        <h1>Front desk portal</h1>
+        <p>Review guest documents, printing charges, and service settings.</p>
+      </section>
+      <section class="card auth-card">
+        <p class="eyebrow">Staff access</p>
+        <h2>Sign in</h2>
+        <form id="login-form" novalidate>
+          <label class="field">
+            <span>Username</span>
+            <input id="username" autocomplete="username" maxlength="32" required />
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <input id="password" type="password" autocomplete="current-password" required />
+          </label>
+          <div id="login-error" class="alert error hidden" role="alert"></div>
+          <button class="button primary wide" type="submit">Sign in</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

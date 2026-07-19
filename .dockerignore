@@ -1,0 +1,13 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+data
+documentation
+supabase
+node_modules
+npm-debug.log*
+*.pdf
+*.sqlite*
+*.log

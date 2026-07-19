@@ -1,0 +1,20 @@
+{
+  "name": "redlion-hotel-printing-services",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Secure guest PDF intake and front-desk printing queue for Red Lion Hotel.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "check:antivirus": "node src/cli/check-antivirus.js",
+    "check": "node --check src/server.js && node --check src/database.js && node --check src/supabase-database.js && node --check src/services/auth.js && node --check src/services/cleanup.js && node --check src/services/document-store.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.7"
+  }
+}
