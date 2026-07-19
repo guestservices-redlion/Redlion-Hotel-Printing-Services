@@ -46,9 +46,9 @@ npm run build
 npm start
 ```
 
-This repository is the recovered JavaScript source baseline. Cloud migration files live under
-`supabase/`; the current runtime continues to use local SQLite and local document storage until
-the Supabase application adapter is enabled and verified.
+The production frontend is deployed as static GitHub Pages content from `public/`. Trusted API,
+authentication, PDF validation, pricing, and private document operations run in the Supabase Edge
+Function under `supabase/functions/api`. No Supabase secret key is included in browser code.
 
 On the first visit to `/admin`, the hotel creates its own administrator account and settings.
 

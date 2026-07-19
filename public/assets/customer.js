@@ -33,7 +33,7 @@ function money(minor, currency) {
 
 async function loadConfig() {
   try {
-    const response = await fetch("/api/customer/config");
+    const response = await fetch(hotelPrintApiUrl("/api/customer/config"));
     const config = await response.json();
     document.querySelector("#hotel-name").textContent = config.hotelName;
     document.querySelector("#max-size").textContent =
@@ -69,7 +69,7 @@ uploadForm.addEventListener("submit", (event) => {
   progressDetail.textContent = "Sending the PDF to the hotel computer.";
 
   const xhr = new XMLHttpRequest();
-  xhr.open("POST", "/api/customer/upload");
+  xhr.open("POST", hotelPrintApiUrl("/api/customer/upload"));
   xhr.responseType = "json";
   xhr.upload.addEventListener("progress", (progress) => {
     if (!progress.lengthComputable) return;
@@ -131,7 +131,7 @@ async function handlePendingAction(action) {
   cancelButton.disabled = true;
   try {
     const response = await fetch(
-      `/api/customer/jobs/${encodeURIComponent(pendingJob.reference)}/${action}`,
+      hotelPrintApiUrl(`/api/customer/jobs/${encodeURIComponent(pendingJob.reference)}/${action}`),
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

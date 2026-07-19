@@ -1,6 +1,6 @@
 const content = document.querySelector("#admin-content");
 const sidebar = document.querySelector(".sidebar");
-let session = null;
+let session = JSON.parse(sessionStorage.getItem("hotelPrintSession") || "null");
 let pollTimer = null;
 
 function htmlEscape(value) {
@@ -21,14 +21,13 @@ function dateTime(value) {
 
 async function api(url, options = {}) {
   const headers = new Headers(options.headers ?? {});
-  if (session?.csrfToken && options.method && options.method !== "GET") {
-    headers.set("x-csrf-token", session.csrfToken);
-  }
-  const response = await fetch(url, { ...options, headers });
+  if (session?.access_token) headers.set("Authorization", `Bearer ${session.access_token}`);
+  const response = await fetch(hotelPrintApiUrl(url), { ...options, headers });
   const type = response.headers.get("content-type") ?? "";
   const body = type.includes("application/json") ? await response.json() : null;
   if (response.status === 401) {
-    window.location.assign("/admin/login");
+    sessionStorage.removeItem("hotelPrintSession");
+    window.location.assign(hotelPrintPageUrl("admin-login.html"));
     throw new Error("Sign in required.");
   }
   if (!response.ok) throw new Error(body?.error?.message ?? "The request failed.");
@@ -36,10 +35,35 @@ async function api(url, options = {}) {
 }
 
 function activeSection() {
-  if (location.pathname.startsWith("/admin/settings")) return "settings";
-  if (location.pathname.startsWith("/admin/qr-code")) return "qr-code";
-  if (location.pathname.startsWith("/admin/jobs/")) return "job";
+  if (location.hash.startsWith("#/settings")) return "settings";
+  if (location.hash.startsWith("#/qr-code")) return "qr-code";
+  if (location.hash.startsWith("#/jobs/")) return "job";
   return "queue";
+}
+
+async function privateBlob(path) {
+  const response = await fetch(hotelPrintApiUrl(path), {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  if (!response.ok) throw new Error("The private file could not be loaded.");
+  return response.blob();
+}
+
+async function openDocument(id, download = false, filename = "document.pdf") {
+  const blob = await privateBlob(`/api/admin/jobs/${encodeURIComponent(id)}/file${download ? "?download=1" : ""}`);
+  const objectUrl = URL.createObjectURL(blob);
+  if (download) {
+    const link = document.createElement("a");
+    link.href = objectUrl; link.download = filename; link.click();
+  } else window.open(objectUrl, "_blank", "noopener");
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+}
+
+function downloadBlob(blob, filename) {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl; link.download = filename; link.click();
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
 }
 
 function markNavigation() {
@@ -58,13 +82,13 @@ async function loadQueue() {
   const rows = jobsResult.jobs.length
     ? jobsResult.jobs.map((job) => `
       <tr>
-        <td><a class="job-link" href="/admin/jobs/${encodeURIComponent(job.id)}">${htmlEscape(job.reference)}</a><small>${htmlEscape(job.originalFilename)}</small></td>
+        <td><a class="job-link" href="#/jobs/${encodeURIComponent(job.id)}">${htmlEscape(job.reference)}</a><small>${htmlEscape(job.originalFilename)}</small></td>
         <td><strong>${htmlEscape(job.roomNumber)}</strong><small>${htmlEscape(job.lastName)}</small></td>
         <td>${job.pageCount}<small>${job.chargeablePages} charged</small></td>
         <td><span class="status-pill ${job.totalMinor > 0 ? "paid" : "free"}">${job.totalMinor > 0 ? "Payment required" : "Free"}</span><small>${money(job.totalMinor, job.currency)}</small></td>
         <td>${dateTime(job.acceptedAt)}</td>
         <td class="actions">
-          <a class="button compact secondary" target="_blank" rel="noopener" href="/api/admin/jobs/${encodeURIComponent(job.id)}/file">Open PDF</a>
+          <button class="button compact secondary" data-open="${htmlEscape(job.id)}">Open PDF</button>
           <button class="button compact primary" data-complete="${htmlEscape(job.id)}">Complete</button>
         </td>
       </tr>`).join("")
@@ -82,6 +106,7 @@ async function loadQueue() {
       <div class="table-wrap"><table><thead><tr><th>Job</th><th>Guest</th><th>Pages</th><th>Charge</th><th>Submitted</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div>
     </section>`;
   document.querySelector("#refresh-button")?.addEventListener("click", loadQueue);
+  document.querySelectorAll("[data-open]").forEach((button) => button.addEventListener("click", () => openDocument(button.dataset.open)));
   document.querySelectorAll("[data-complete]").forEach((button) => {
     button.addEventListener("click", async () => {
       if (!confirm("Mark this document complete and remove it from the active queue?")) return;
@@ -159,17 +184,20 @@ async function loadQrCode() {
     <div class="page-heading"><div><p class="eyebrow">Guest access</p><h1>Guest QR code</h1><p>Print this code and place it in hotel rooms.</p></div></div>
     ${isLocal ? `<div class="alert warning"><strong>This QR code uses a local address.</strong> Guest phones cannot normally open localhost. Configure the public tunnel URL in Settings before printing it.</div>` : ""}
     <section class="qr-layout">
-      <div class="card qr-card"><img src="/api/admin/qr.svg" alt="QR code for the customer document upload website"><p class="url-preview">${htmlEscape(settings.publicCustomerUrl)}</p></div>
-      <div class="card qr-instructions"><p class="eyebrow">Room card</p><h2>Scan to print</h2><p>Upload a PDF from your phone. The front desk will print it for you.</p><ol><li>Scan this QR code.</li><li>Enter your room and last name.</li><li>Upload and submit your PDF.</li><li>Visit the front desk to collect it.</li></ol><div class="button-stack"><a class="button primary" href="/api/admin/qr.png?download=1">Download PNG</a><a class="button secondary" href="/api/admin/qr.svg?download=1">Download SVG</a><button id="print-qr" class="button secondary">Print this page</button></div></div>
+      <div class="card qr-card"><img id="qr-image" alt="QR code for the customer document upload website"><p class="url-preview">${htmlEscape(settings.publicCustomerUrl)}</p></div>
+      <div class="card qr-instructions"><p class="eyebrow">Room card</p><h2>Scan to print</h2><p>Upload a PDF from your phone. The front desk will print it for you.</p><ol><li>Scan this QR code.</li><li>Enter your room and last name.</li><li>Upload and submit your PDF.</li><li>Visit the front desk to collect it.</li></ol><div class="button-stack"><button id="download-qr-png" class="button primary">Download PNG</button><button id="download-qr-svg" class="button secondary">Download SVG</button><button id="print-qr" class="button secondary">Print this page</button></div></div>
     </section>`;
+  document.querySelector("#qr-image").src = URL.createObjectURL(await privateBlob("/api/admin/qr.svg"));
+  document.querySelector("#download-qr-png").addEventListener("click", async () => downloadBlob(await privateBlob("/api/admin/qr.png?download=1"), "hotel-print-qr.png"));
+  document.querySelector("#download-qr-svg").addEventListener("click", async () => downloadBlob(await privateBlob("/api/admin/qr.svg?download=1"), "hotel-print-qr.svg"));
   document.querySelector("#print-qr").addEventListener("click", () => window.print());
 }
 
 async function loadJob() {
-  const id = location.pathname.split("/").pop();
+  const id = location.hash.split("/").pop();
   const { job } = await api(`/api/admin/jobs/${encodeURIComponent(id)}`);
   content.innerHTML = `
-    <div class="page-heading"><div><a class="back-link" href="/admin/queue">← Back to queue</a><p class="eyebrow">Job ${htmlEscape(job.reference)}</p><h1>${htmlEscape(job.originalFilename)}</h1><p>Submitted by room ${htmlEscape(job.roomNumber)} · ${htmlEscape(job.lastName)}</p></div></div>
+    <div class="page-heading"><div><a class="back-link" href="#/queue">← Back to queue</a><p class="eyebrow">Job ${htmlEscape(job.reference)}</p><h1>${htmlEscape(job.originalFilename)}</h1><p>Submitted by room ${htmlEscape(job.roomNumber)} · ${htmlEscape(job.lastName)}</p></div></div>
     <section class="detail-grid">
       <div class="card">
         <h2>Document</h2>
@@ -180,7 +208,7 @@ async function loadJob() {
           <div><dt>Accepted</dt><dd>${dateTime(job.acceptedAt)}</dd></div>
           <div><dt>Expires</dt><dd>${dateTime(job.expiresAt)}</dd></div>
         </dl>
-        <div class="button-row"><a class="button primary" target="_blank" rel="noopener" href="/api/admin/jobs/${encodeURIComponent(job.id)}/file">Open PDF</a><a class="button secondary" href="/api/admin/jobs/${encodeURIComponent(job.id)}/file?download=1">Download</a></div>
+        <div class="button-row"><button id="open-job" class="button primary">Open PDF</button><button id="download-job" class="button secondary">Download</button></div>
       </div>
       <div class="card">
         <h2>Price snapshot</h2>
@@ -201,15 +229,18 @@ async function loadJob() {
       headers: { "Content-Type": "application/json" },
       body: "{}",
     });
-    window.location.assign("/admin/queue");
+    window.location.hash = "#/queue";
   });
+  document.querySelector("#open-job").addEventListener("click", () => openDocument(job.id));
+  document.querySelector("#download-job").addEventListener("click", () => openDocument(job.id, true, job.originalFilename));
 }
 
 async function initialize() {
   try {
-    session = await api("/api/admin/session");
-    if (!session.authenticated) return window.location.assign("/admin/login");
-    document.querySelector("#signed-in-user").textContent = `Signed in as ${session.username}`;
+    if (!session?.access_token) return window.location.assign(hotelPrintPageUrl("admin-login.html"));
+    const status = await api("/api/admin/session");
+    if (!status.authenticated) return window.location.assign(hotelPrintPageUrl("admin-login.html"));
+    document.querySelector("#signed-in-user").textContent = `Signed in as ${status.username}`;
     markNavigation();
     const section = activeSection();
     if (section === "queue") {
@@ -227,8 +258,10 @@ async function initialize() {
 
 document.querySelector("#logout-button").addEventListener("click", async () => {
   await api("/api/admin/logout", { method: "POST" });
-  window.location.assign("/admin/login");
+  sessionStorage.removeItem("hotelPrintSession");
+  window.location.assign(hotelPrintPageUrl("admin-login.html"));
 });
 document.querySelector("#menu-button").addEventListener("click", () => sidebar.classList.toggle("open"));
 window.addEventListener("beforeunload", () => clearInterval(pollTimer));
+window.addEventListener("hashchange", () => { clearInterval(pollTimer); initialize(); });
 initialize();
