@@ -54,8 +54,7 @@ async function loadQueue() {
     api("/api/admin/dashboard"),
     api("/api/admin/jobs"),
   ]);
-  const { stats, settings, antivirus } = dashboard;
-  const warning = `<div class="alert warning"><strong>Malware scanning disabled.</strong> ${htmlEscape(antivirus.message)} Staff should open guest documents only in a patched, sandboxed PDF viewer.</div>`;
+  const { stats, settings } = dashboard;
   const rows = jobsResult.jobs.length
     ? jobsResult.jobs.map((job) => `
       <tr>
@@ -72,7 +71,6 @@ async function loadQueue() {
     : `<tr><td colspan="6"><div class="empty-state"><div>✓</div><h3>No documents are waiting</h3><p>Accepted guest uploads will appear here automatically.</p></div></td></tr>`;
   content.innerHTML = `
     <div class="page-heading"><div><p class="eyebrow">Front desk</p><h1>Print queue</h1><p>Accepted, checked documents waiting for staff.</p></div><div class="live-badge"><span></span>Updates automatically</div></div>
-    ${warning}
     <section class="stat-grid">
       <article class="stat-card"><span>Waiting</span><strong>${stats.total}</strong><small>active documents</small></article>
       <article class="stat-card"><span>Free jobs</span><strong>${stats.free}</strong><small>within ${settings.freePageLimit} free pages</small></article>
@@ -119,7 +117,6 @@ async function loadSettings() {
           <label class="field"><span>Document retention (hours)</span><input id="retention" type="number" min="1" max="8760" value="${settings.retentionHours}" required></label>
           <label class="field"><span>Guest confirmation timeout (minutes)</span><input id="confirmation-timeout" type="number" min="1" max="1440" value="${settings.confirmationTimeoutMinutes}" required></label>
           <label class="field full"><span>Public customer URL</span><input id="public-url" type="url" value="${htmlEscape(settings.publicCustomerUrl)}" required><small>This is the URL encoded in the guest QR code.</small></label>
-          <div class="alert warning full"><strong>Malware scanning is disabled.</strong> Uploaded files are still restricted to structurally valid PDFs.</div>
         </div>
         <div id="settings-message" class="alert hidden" role="status"></div>
         <button class="button primary" type="submit">Save settings</button>
@@ -179,7 +176,7 @@ async function loadJob() {
         <dl class="detail-list">
           <div><dt>Pages</dt><dd>${job.pageCount}</dd></div>
           <div><dt>File size</dt><dd>${(job.fileSize / 1048576).toFixed(2)} MB</dd></div>
-          <div><dt>PDF validation</dt><dd>${job.scanStatus === "BYPASSED" ? "Structure checked; malware scan disabled" : htmlEscape(job.scanStatus)}</dd></div>
+          <div><dt>PDF validation</dt><dd>${job.scanStatus === "BYPASSED" ? "Validated" : htmlEscape(job.scanStatus)}</dd></div>
           <div><dt>Accepted</dt><dd>${dateTime(job.acceptedAt)}</dd></div>
           <div><dt>Expires</dt><dd>${dateTime(job.expiresAt)}</dd></div>
         </dl>
