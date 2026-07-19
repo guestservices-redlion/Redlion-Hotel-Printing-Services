@@ -8,9 +8,12 @@ It provides two separate websites:
 - Customer upload: `http://localhost:3000/`
 - Front desk: `http://localhost:3000/admin`
 
-Documents are stored on the hotel computer. They enter a private quarantine area, are scanned
-with ClamAV, validated as PDFs, counted, priced, and shown to the front desk only after the guest
+Documents are stored in private Supabase Storage. They are validated as PDFs, counted, priced,
+and shown to the front desk only after the guest
 accepts the result.
+
+> **Security notice:** Malware scanning is not enabled. Staff should keep endpoint protection and
+> their PDF viewer patched and treat every guest document as untrusted.
 
 ## Business rules
 
@@ -30,7 +33,6 @@ Requirements:
 - Windows 10 or Windows 11
 - Node.js 22.5 or newer
 - VS Code
-- ClamAV for real document scanning
 
 ```powershell
 npm install
@@ -82,7 +84,6 @@ never be placed in a public repository or reused in another hotel's distribution
 - [Windows installation](documentation/WINDOWS_INSTALLATION.md)
 - [VS Code development](documentation/DEVELOPMENT.md)
 - [Front-desk guide](documentation/FRONT_DESK_GUIDE.md)
-- [ClamAV](documentation/CLAMAV.md)
 - [Public tunnel](documentation/PUBLIC_TUNNEL.md)
 - [Backup and recovery](documentation/BACKUP_RECOVERY.md)
 - [Updating](documentation/UPDATING.md)

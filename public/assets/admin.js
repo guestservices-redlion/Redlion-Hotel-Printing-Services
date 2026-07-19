@@ -55,9 +55,7 @@ async function loadQueue() {
     api("/api/admin/jobs"),
   ]);
   const { stats, settings, antivirus } = dashboard;
-  const warning = !antivirus.available || antivirus.status === "BYPASSED_UNSAFE"
-    ? `<div class="alert warning"><strong>Antivirus attention required.</strong> ${htmlEscape(antivirus.message)} Clean files should not be accepted for hotel use until scanning is available.</div>`
-    : "";
+  const warning = `<div class="alert warning"><strong>Malware scanning disabled.</strong> ${htmlEscape(antivirus.message)} Staff should open guest documents only in a patched, sandboxed PDF viewer.</div>`;
   const rows = jobsResult.jobs.length
     ? jobsResult.jobs.map((job) => `
       <tr>
@@ -79,7 +77,7 @@ async function loadQueue() {
       <article class="stat-card"><span>Waiting</span><strong>${stats.total}</strong><small>active documents</small></article>
       <article class="stat-card"><span>Free jobs</span><strong>${stats.free}</strong><small>within ${settings.freePageLimit} free pages</small></article>
       <article class="stat-card"><span>Payment jobs</span><strong>${stats.paymentRequired}</strong><small>${money(settings.pricePerPageMinor, settings.currency)} per extra page</small></article>
-      <article class="stat-card"><span>File scanner</span><strong class="scanner-word ${antivirus.available ? "good" : "bad"}">${antivirus.available ? "Ready" : "Attention"}</strong><small>${htmlEscape(antivirus.message)}</small></article>
+      <article class="stat-card"><span>PDF validation</span><strong class="scanner-word good">Enabled</strong><small>File type, signature, structure, encryption, and page limits are checked.</small></article>
     </section>
     <section class="card table-card">
       <div class="section-heading"><div><h2>Waiting documents</h2><p>Verify the guest, collect any payment, then open and print.</p></div><button id="refresh-button" class="button secondary compact">Refresh</button></div>
@@ -121,7 +119,7 @@ async function loadSettings() {
           <label class="field"><span>Document retention (hours)</span><input id="retention" type="number" min="1" max="8760" value="${settings.retentionHours}" required></label>
           <label class="field"><span>Guest confirmation timeout (minutes)</span><input id="confirmation-timeout" type="number" min="1" max="1440" value="${settings.confirmationTimeoutMinutes}" required></label>
           <label class="field full"><span>Public customer URL</span><input id="public-url" type="url" value="${htmlEscape(settings.publicCustomerUrl)}" required><small>This is the URL encoded in the guest QR code.</small></label>
-          <label class="toggle full"><input id="antivirus-required" type="checkbox" ${settings.antivirusRequired ? "checked" : ""}><span><strong>Require antivirus scanning</strong><small>Recommended for every hotel installation.</small></span></label>
+          <div class="alert warning full"><strong>Malware scanning is disabled.</strong> Uploaded files are still restricted to structurally valid PDFs.</div>
         </div>
         <div id="settings-message" class="alert hidden" role="status"></div>
         <button class="button primary" type="submit">Save settings</button>
@@ -144,7 +142,7 @@ async function loadSettings() {
           maxPageCount: Number(document.querySelector("#max-pages").value),
           retentionHours: Number(document.querySelector("#retention").value),
           confirmationTimeoutMinutes: Number(document.querySelector("#confirmation-timeout").value),
-          antivirusRequired: document.querySelector("#antivirus-required").checked,
+          antivirusRequired: false,
           publicCustomerUrl: document.querySelector("#public-url").value,
         }),
       });
@@ -181,7 +179,7 @@ async function loadJob() {
         <dl class="detail-list">
           <div><dt>Pages</dt><dd>${job.pageCount}</dd></div>
           <div><dt>File size</dt><dd>${(job.fileSize / 1048576).toFixed(2)} MB</dd></div>
-          <div><dt>Security scan</dt><dd>${htmlEscape(job.scanStatus)}</dd></div>
+          <div><dt>PDF validation</dt><dd>${job.scanStatus === "BYPASSED" ? "Structure checked; malware scan disabled" : htmlEscape(job.scanStatus)}</dd></div>
           <div><dt>Accepted</dt><dd>${dateTime(job.acceptedAt)}</dd></div>
           <div><dt>Expires</dt><dd>${dateTime(job.expiresAt)}</dd></div>
         </dl>

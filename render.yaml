@@ -4,16 +4,12 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
-    plan: starter
+    plan: free
     envVars:
       - key: HOST
         value: 0.0.0.0
       - key: COOKIE_SECURE
         value: "true"
-      - key: ANTIVIRUS_MODE
-        value: normal
-      - key: ALLOW_UNSAFE_ANTIVIRUS_BYPASS
-        value: "false"
       - key: SUPABASE_URL
         value: https://dhsgteuhxezvzqkbglxx.supabase.co
       - key: SUPABASE_STORAGE_BUCKET
