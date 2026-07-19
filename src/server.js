@@ -12,7 +12,6 @@ import { calculatePrice } from "./lib/money.js";
 import { hashPassword, hashToken, randomToken, verifyPassword } from "./lib/security.js";
 import { addHoursIso, addMinutesIso, isPast, nowIso } from "./lib/time.js";
 import { currencyCode, integerInRange, normalizeLastName, normalizeRoomNumber, normalizeUsername, safeDisplayFilename, validatePassword, ValidationError, } from "./lib/validation.js";
-import { AntivirusService } from "./services/antivirus.js";
 import { AuthService } from "./services/auth.js";
 import { runCleanup } from "./services/cleanup.js";
 import { moveFileAtomic, quarantinedPath, queuedPath, removeFileIfPresent, } from "./services/files.js";
@@ -197,7 +196,7 @@ function parseSettings(body, existing) {
         maxPageCount: integerInRange(body.maxPageCount, "Maximum page count", 1, 10_000),
         retentionHours: integerInRange(body.retentionHours, "Retention period", 1, 8760),
         confirmationTimeoutMinutes: integerInRange(body.confirmationTimeoutMinutes, "Confirmation timeout", 1, 1440),
-        antivirusRequired: body.antivirusRequired === true,
+        antivirusRequired: false,
         publicCustomerUrl,
     };
 }
@@ -208,7 +207,6 @@ export function createHotelServer(overrides = {}) {
     const database = config.supabaseUrl && config.supabaseSecretKey
         ? new SupabaseHotelDatabase(config.supabaseUrl, config.supabaseSecretKey)
         : new HotelDatabase(config.databasePath);
-    const antivirus = new AntivirusService(config, logger);
     const documentStore = new DocumentStore(config);
     const auth = new AuthService(database, config);
     const loginLimiter = new MemoryRateLimiter(5, 15 * 60_000, 15 * 60_000);
@@ -278,23 +276,11 @@ export function createHotelServer(overrides = {}) {
                 createdAt,
             });
             try {
-                const scan = await antivirus.scan(temporaryPath, settings.antivirusRequired);
-                if (!["CLEAN", "BYPASSED_UNSAFE"].includes(scan.status)) {
-                    await database.markRejected(job.id, scan.status);
-                    await removeFileIfPresent(temporaryPath);
-                    if (scan.status === "INFECTED") {
-                        throw new ValidationError("This document could not be accepted because it failed the security check.", "UNSAFE_FILE");
-                    }
-                    if (scan.status === "UNAVAILABLE") {
-                        throw new ValidationError("Document scanning is temporarily unavailable. Please contact the front desk.", "ANTIVIRUS_UNAVAILABLE", 503);
-                    }
-                    throw new ValidationError("The document security scan could not be completed. Please try again.", "ANTIVIRUS_ERROR", 503);
-                }
                 const pageCount = await validateAndCountPdf(temporaryPath, upload.file.originalFilename, upload.file.mimeType, settings.maxPageCount);
                 const price = calculatePrice(pageCount, settings.freePageLimit, settings.pricePerPageMinor);
                 const pending = await database.markAwaitingConfirmation({
                     id: job.id,
-                    scanStatus: scan.status,
+                    scanStatus: "BYPASSED",
                     pageCount,
                     freePageLimit: settings.freePageLimit,
                     chargeablePages: price.chargeablePages,
@@ -477,15 +463,14 @@ export function createHotelServer(overrides = {}) {
         }
         if (method === "GET" && pathname === "/api/admin/dashboard") {
             const settings = await database.getSettings();
-            const scanner = await antivirus.availability();
             sendJson(response, 200, {
                 stats: await database.getQueueStats(),
                 settings,
                 antivirus: {
-                    available: scanner.available,
-                    status: scanner.status,
-                    message: scanner.message,
-                    unsafeBypassEnabled: config.allowUnsafeAntivirusBypass,
+                    available: false,
+                    status: "DISABLED",
+                    message: "Malware scanning is disabled. PDF structure validation remains enabled.",
+                    unsafeBypassEnabled: true,
                 },
             });
             return true;
@@ -674,7 +659,6 @@ export function createHotelServer(overrides = {}) {
         config,
         database,
         logger,
-        antivirus,
         documentStore,
         close: async () => {
             if (server.listening) {
