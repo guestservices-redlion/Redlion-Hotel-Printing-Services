@@ -45,13 +45,13 @@
               </div>
             </label>
             <label class="field">
-              <span>Admin password</span>
-              <input id="password" type="password" autocomplete="new-password" required />
-              <small>Use at least 12 characters.</small>
+              <span>4-digit staff PIN</span>
+              <input id="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required />
+              <small>Enter exactly 4 numbers.</small>
             </label>
             <label class="field">
-              <span>Confirm password</span>
-              <input id="confirm-password" type="password" autocomplete="new-password" required />
+              <span>Confirm PIN</span>
+              <input id="confirm-pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required />
             </label>
           </div>
           <div id="setup-error" class="alert error hidden" role="alert"></div>
