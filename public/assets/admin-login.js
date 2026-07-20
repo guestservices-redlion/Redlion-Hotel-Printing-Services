@@ -14,12 +14,14 @@ form.addEventListener("submit", async (event) => {
   const button = form.querySelector("button");
   button.disabled = true;
   try {
+    const pin = document.querySelector("#pin").value;
+    if (!/^\d{4}$/.test(pin)) throw new Error("Enter your 4-digit staff PIN.");
     const response = await fetch(hotelPrintApiUrl("/api/admin/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: document.querySelector("#username").value,
-        password: document.querySelector("#password").value,
+        pin,
       }),
     });
     const result = await response.json();

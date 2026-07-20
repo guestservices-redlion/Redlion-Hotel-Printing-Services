@@ -15,14 +15,18 @@ form.addEventListener("submit", async (event) => {
   button.disabled = true;
   const price = Number(document.querySelector("#price-per-page").value);
   try {
+    const pin = document.querySelector("#pin").value;
+    const confirmPin = document.querySelector("#confirm-pin").value;
+    if (!/^\d{4}$/.test(pin)) throw new Error("Use exactly 4 digits for the staff PIN.");
+    if (pin !== confirmPin) throw new Error("PIN confirmation does not match.");
     const response = await fetch(hotelPrintApiUrl("/api/admin/setup"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         hotelName: document.querySelector("#hotel-name").value,
         username: document.querySelector("#username").value,
-        password: document.querySelector("#password").value,
-        confirmPassword: document.querySelector("#confirm-password").value,
+        pin,
+        confirmPin,
         freePageLimit: Number(document.querySelector("#free-pages").value),
         pricePerPageMinor: Math.round(price * 100),
         currency: document.querySelector("#currency").value,

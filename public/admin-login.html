@@ -25,8 +25,8 @@
             <input id="username" autocomplete="username" maxlength="32" required />
           </label>
           <label class="field">
-            <span>Password</span>
-            <input id="password" type="password" autocomplete="current-password" required />
+            <span>4-digit PIN</span>
+            <input id="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="current-password" required />
           </label>
           <div id="login-error" class="alert error hidden" role="alert"></div>
           <button class="button primary wide" type="submit">Sign in</button>

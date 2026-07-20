@@ -48,6 +48,11 @@ async function hashToken(token: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
+async function pinPassword(value: unknown) {
+  const pin = String(value ?? "");
+  if (!/^\d{4}$/.test(pin)) throw new ApiError(400, "INVALID_PIN", "Use exactly 4 digits for the staff PIN.");
+  return await hashToken(`hotel-print-admin-pin-v1:${pin}`);
+}
 function reference() { return `HP-${crypto.randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`; }
 function text(value: unknown, name: string, maximum = 100) {
   if (typeof value !== "string" || !value.trim()) throw new ApiError(400, "INVALID_INPUT", `${name} is required.`);
@@ -200,9 +205,9 @@ async function handle(req: Request) {
     if ((count ?? 0) > 0) throw new ApiError(409, "SETUP_COMPLETE", "Initial setup is already complete.");
     const body = await readJson(req);
     const username = text(body.username, "Username", 50).toLowerCase();
-    const password = text(body.password, "Password", 200);
-    if (password.length < 12) throw new ApiError(400, "WEAK_PASSWORD", "Use at least 12 characters for the password.");
-    if (password !== body.confirmPassword) throw new ApiError(400, "INVALID_INPUT", "Password confirmation does not match.");
+    const pin = String(body.pin ?? "");
+    if (pin !== String(body.confirmPin ?? "")) throw new ApiError(400, "INVALID_INPUT", "PIN confirmation does not match.");
+    const password = await pinPassword(pin);
     const email = `${username.replace(/[^a-z0-9._-]/g, "-")}@hotelprint.local`;
     const { data: created, error: createError } = await service.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { username } }); fail(createError);
     const { error: profileError } = await service.from("admin_profiles").insert({ user_id: created.user.id, username, email });
@@ -222,9 +227,10 @@ async function handle(req: Request) {
     const body = await readJson(req);
     const username = text(body.username, "Username", 50);
     const { data: profile, error } = await service.from("admin_profiles").select("*").ilike("username", username).maybeSingle(); fail(error);
-    if (!profile) throw new ApiError(401, "INVALID_CREDENTIALS", "Incorrect username or password.");
-    const { data: signed, error: signError } = await publicAuth.auth.signInWithPassword({ email: profile.email, password: String(body.password ?? "") });
-    if (signError || !signed.session) throw new ApiError(401, "INVALID_CREDENTIALS", "Incorrect username or password.");
+    if (!profile) throw new ApiError(401, "INVALID_CREDENTIALS", "Incorrect username or PIN.");
+    const password = await pinPassword(body.pin);
+    const { data: signed, error: signError } = await publicAuth.auth.signInWithPassword({ email: profile.email, password });
+    if (signError || !signed.session) throw new ApiError(401, "INVALID_CREDENTIALS", "Incorrect username or PIN.");
     await service.from("admin_profiles").update({ last_login_at: now() }).eq("user_id", profile.user_id);
     return json(200, { status: "SIGNED_IN", session: signed.session });
   }
